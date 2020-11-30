@@ -24,7 +24,8 @@ GitHubのAPIを呼び出す処理を実装する<br>
   - GitHubに用意された、ユーザー情報を取得するAPI
   - 英数字とハイフン以外はIDに利用できない
     - そのため、`encodeURIComponent`関数で`/`や`%`などURLとして特殊な意味を持つ文字列をただの文字列としてエスケープしたものをユーザーIDとして結合する
-- 指定したGitHubユーザーIDの情報を取得するURLに対して`fecth`メソッドでGETのHTTPリクエストを送るコード
+
+指定したGitHubユーザーIDの情報を取得するURLに対して`fecth`メソッドでGETのHTTPリクエストを送るコード
 
 ```javascript
 const userID = "任意のGitHubユーザーID";
@@ -44,6 +45,72 @@ fecth(`https://api.github.com/users/${encodeURIComponent(userID)});
     - ？コールバック？then？
 
 
+以下のコードについて
+- `Response`オブジェクトの`status`プロパティからはHTTPレスポンスのステータスコードが入手できる
+  - 200とか404とかのことか
+- `json`メソッドも`Promise`を返す
+  - HTTPレスポンスボディをJSONとしてパースしたオブジェクトでresolveされる
+    - だからresolveてなんやねんな
+```javascript
+const userId ="js-primer-example";
+fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`)
+  .then(response => {
+    console.log(response.status); // => 200
+    return response.json().then(userInfo => {
+      // JSONパースされたオブジェクトが渡される
+      console.log(userInfo); // => {...}
+    });
+  });
+```
+
 ### エラーハンドリング
+- HTTP通信にはエラーがつきもの
+  - やんなっちゃうなん
+  - だからFetch APIを使った通信においてもエラーをハンドリングする必要がある
+    - 「ハンドリング」？
+- 例えば
+  - サーバー通信でネットワークエラーが発生したとき
+    - ネットワークエラーを表す`NetworkError`オブジェクトでrejectされた`Promise`が返される
+      - rejectってなんだ！！
+    - すなわち…`then`メソッドの第二引数or `catch`メソッドのコールバック関数が呼び出される
+  
+```javascript
+const userId = "js-primer-example";
+fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`)
+    .then(response => {
+      console.log(response.status);
+      return response.json().then(userInfo => {
+        console.log(userInfo);
+      });
+    }).catch(error => {
+      console.error(error);
+    });
+```
+
+- リクエストが成功したかどうか
+  - `Response`オブジェクトの`ok`プロパティで認識できるう！
+    - HTTPステータスコードが
+      - 200番台→`true`
+      - それ以外（400番台や500番台）→`fasle`
+  - 以下のコード…`ok`プロパティが`false`となるエラーレスポンスをハンドリング
+
+```javascript
+const userId = "js-primer-example";
+fetch(`https://api.github.com/users/${encodeURIComponent(userId)}`)
+    .then(response => {
+      console.log(response.status);
+      // エラーレスポンスが返されたことを検知
+      if(!response.ok) {
+        console.error("エラーレスポンス", response);
+      } else {
+        return response.json().then(userInfo => {
+          console.log(userInfo);
+        });
+      }
+    }).catch(error => {
+      console.error(error);
+    });
+```
+
 ### [コラム] XMLHttpRequest
 ### このセクションのチェックリスト
